@@ -1,15 +1,46 @@
 import requests
+import pandas as pd
+import numpy as np
 
-url = "https://api.gateio.ws/api/v4/spot/tickers"
+BASE_URL = "https://api.gateio.ws/api/v4"
 
-response = requests.get(url)
+def get_usdt_pairs():
 
-data = response.json()
+    url = f"{BASE_URL}/spot/tickers"
 
-print("Total Coins:", len(data))
+    response = requests.get(url)
+    data = response.json()
 
-for coin in data[:10]:
-    print(
-        coin["currency_pair"],
-        coin["last"]
+    pairs = []
+
+    for coin in data:
+
+        try:
+
+            pair = coin["currency_pair"]
+
+            if pair.endswith("_USDT"):
+
+                pairs.append({
+                    "pair": pair,
+                    "volume": float(coin["quote_volume"])
+                })
+
+        except:
+            pass
+
+    pairs = sorted(
+        pairs,
+        key=lambda x: x["volume"],
+        reverse=True
     )
+
+    return pairs[:100]
+
+
+pairs = get_usdt_pairs()
+
+print("TOP COINS FOUND:", len(pairs))
+
+for coin in pairs[:10]:
+    print(coin["pair"], coin["volume"])
