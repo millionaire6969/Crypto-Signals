@@ -5,7 +5,66 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Crypto Signal Scanner</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabaseUrl = "https://hfjgukyubgcepqmzoxam.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhmamd1a3l1YmdjZXBxbXpveGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDQ5NDcsImV4cCI6MjA5NjYyMDk0N30.Rn8mB2BeFzOhUsExfDZhQ2t1a54T6vOdKHf7hy4jOCA";
+
+const client = createClient(supabaseUrl, supabaseKey);
+
+async function loadSignals() {
+    try {
+        const { data, error } = await client
+            .from("signals")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(20);
+
+        if (error) {
+            console.log("Supabase error:", error);
+            return;
+        }
+
+        const container = document.getElementById("signals");
+
+        if (!data || data.length === 0) {
+            container.innerHTML = "<p>No signals found</p>";
+            return;
+        }
+
+        let html = "";
+
+        data.forEach(item => {
+
+            let color = "watch";
+            if (item.signal_type.includes("BUY")) color = "buy";
+            if (item.signal_type.includes("SELL")) color = "sell";
+
+            html += `
+            <div class="card">
+                <h3>${item.coin}</h3>
+                <p class="${color}">${item.signal_type}</p>
+                <p>Score: ${item.score}</p>
+                <p>Price: ${item.price}</p>
+                <p>TP1: ${item.tp1} | TP2: ${item.tp2}</p>
+                <p>SL: ${item.sl}</p>
+            </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+    } catch (err) {
+        console.log("JS Error:", err);
+    }
+}
+
+window.onload = () => {
+    loadSignals();
+    setInterval(loadSignals, 10000);
+};
+</script>
 
 <style>
 body {
@@ -40,6 +99,7 @@ body {
 </style>
 
 </head>
+
 <body>
 
 <div class="header">
@@ -47,47 +107,6 @@ body {
 </div>
 
 <div class="container" id="signals"></div>
-
-<script>
-const supabaseUrl = "https://hfjgukyubgcepqmzoxam.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhmamd1a3l1YmdjZXBxbXpveGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDQ5NDcsImV4cCI6MjA5NjYyMDk0N30.Rn8mB2BeFzOhUsExfDZhQ2t1a54T6vOdKHf7hy4jOCA";
-
-const client = supabase.createClient(supabaseUrl, supabaseKey);
-
-async function loadSignals() {
-
-    let { data } = await client
-        .from("signals")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-    let html = "";
-
-    data.forEach(item => {
-
-        let color = "watch";
-        if(item.signal_type.includes("BUY")) color = "buy";
-        if(item.signal_type.includes("SELL")) color = "sell";
-
-        html += `
-        <div class="card">
-            <h3>${item.coin}</h3>
-            <p class="${color}">${item.signal_type}</p>
-            <p>Score: ${item.score}</p>
-            <p>Price: ${item.price}</p>
-            <p>TP1: ${item.tp1} | TP2: ${item.tp2}</p>
-            <p>SL: ${item.sl}</p>
-        </div>
-        `;
-    });
-
-    document.getElementById("signals").innerHTML = html;
-}
-
-loadSignals();
-setInterval(loadSignals, 10000);
-</script>
 
 </body>
 </html>
