@@ -55,7 +55,8 @@ header p{
     gap:20px;
 }
 
-.signal-card{
+/* FIX: match JS class */
+.card, .signal-card{
     background:#161b22;
     border:1px solid #30363d;
     border-radius:16px;
@@ -63,16 +64,16 @@ header p{
     transition:.3s;
 }
 
-.signal-card:hover{
+.card:hover, .signal-card:hover{
     transform:translateY(-4px);
 }
 
-.signal-card h3{
+.card h3, .signal-card h3{
     margin:15px 0;
     font-size:24px;
 }
 
-.signal-card p{
+.card p, .signal-card p{
     margin:8px 0;
 }
 
@@ -84,6 +85,7 @@ header p{
     font-weight:bold;
 }
 
+/* signal types */
 .strong-buy{
     background:#00c853;
     color:white;
@@ -102,6 +104,11 @@ header p{
 .strong-sell{
     background:#d50000;
     color:white;
+}
+
+.watch{
+    background:#ffb300;
+    color:black;
 }
 
 .reason-box{
