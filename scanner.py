@@ -299,3 +299,44 @@ print("TP2:", levels["tp2"])
 print("TP3:", levels["tp3"])
 
 print("SL:", levels["sl"])
+
+for coin in pairs[:5]:
+
+    pair = coin["pair"]
+
+    try:
+
+        candles = get_candles(pair)
+
+        rsi = calculate_rsi(candles)
+
+        emas = calculate_emas(candles)
+
+        macd = calculate_macd(candles)
+
+        volume = calculate_volume_spike(candles)
+
+        score = get_trend_score(
+            rsi,
+            emas,
+            macd,
+            volume
+        )
+
+        signal = get_signal(score)
+
+        print(
+            pair,
+            "|",
+            signal,
+            "| Score:",
+            score
+        )
+
+    except Exception as e:
+
+        print(
+            pair,
+            "| ERROR:",
+            str(e)
+        )
