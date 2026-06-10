@@ -11,7 +11,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const supabaseUrl = "https://hfjgukyubgcepqmzoxam.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhmamd1a3l1YmdjZXBxbXpveGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDQ5NDcsImV4cCI6MjA5NjYyMDk0N30.Rn8mB2BeFzOhUsExfDZhQ2t1a54T6vOdKHf7hy4jOCA";
 
-const client = createClient(supabaseUrl, supabaseKey);
+const client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 async function loadSignals() {
     try {
