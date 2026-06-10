@@ -1,6 +1,8 @@
 import requests
 import pandas as pd
 import numpy as np
+from supabase import create_client
+import os
 
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD
