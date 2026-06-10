@@ -104,4 +104,7 @@ function renderSignals() {
     if(sbc) sbc.innerText = strongBuyCount;
 }
 
+const container = document.getElementById("signals");
+if (!container) return;
+
 renderSignals();
