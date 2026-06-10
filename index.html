@@ -5,66 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Crypto Signal Scanner</title>
 
-<script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-const supabaseUrl = "https://hfjgukyubgcepqmzoxam.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhmamd1a3l1YmdjZXBxbXpveGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDQ5NDcsImV4cCI6MjA5NjYyMDk0N30.Rn8mB2BeFzOhUsExfDZhQ2t1a54T6vOdKHf7hy4jOCA";
-
-const client = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-async function loadSignals() {
-    try {
-        const { data, error } = await client
-            .from("signals")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .limit(20);
-
-        if (error) {
-            console.log("Supabase error:", error);
-            return;
-        }
-
-        const container = document.getElementById("signals");
-
-        if (!data || data.length === 0) {
-            container.innerHTML = "<p>No signals found</p>";
-            return;
-        }
-
-        let html = "";
-
-        data.forEach(item => {
-
-            let color = "watch";
-            if (item.signal_type.includes("BUY")) color = "buy";
-            if (item.signal_type.includes("SELL")) color = "sell";
-
-            html += `
-            <div class="card">
-                <h3>${item.coin}</h3>
-                <p class="${color}">${item.signal_type}</p>
-                <p>Score: ${item.score}</p>
-                <p>Price: ${item.price}</p>
-                <p>TP1: ${item.tp1} | TP2: ${item.tp2}</p>
-                <p>SL: ${item.sl}</p>
-            </div>
-            `;
-        });
-
-        container.innerHTML = html;
-
-    } catch (err) {
-        console.log("JS Error:", err);
-    }
-}
-
-window.onload = () => {
-    loadSignals();
-    setInterval(loadSignals, 10000);
-};
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
 <style>
 body {
@@ -80,6 +21,11 @@ body {
     background: #111;
     font-size: 20px;
     font-weight: bold;
+}
+
+.stats {
+    text-align:center;
+    margin:10px;
 }
 
 .card {
@@ -102,11 +48,76 @@ body {
 
 <body>
 
-<div class="header">
-🚀 Live Crypto Signals
+<div class="header">🚀 Live Crypto Signals</div>
+
+<div class="stats">
+  Total: <span id="signalCount">0</span> |
+  Buy: <span id="buyCount">0</span> |
+  Strong Buy: <span id="strongBuyCount">0</span>
 </div>
 
 <div class="container" id="signals"></div>
+
+<script>
+const supabaseUrl = "https://hfjgukyubgcepqmzoxam.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhmamd1a3l1YmdjZXBxbXpveGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDQ5NDcsImV4cCI6MjA5NjYyMDk0N30.Rn8mB2BeFzOhUsExfDZhQ2t1a54T6vOdKHf7hy4jOCA";
+
+const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+async function loadSignals() {
+    const { data, error } = await client
+        .from("signals")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+    if (error) {
+        console.log(error);
+        return;
+    }
+
+    const container = document.getElementById("signals");
+
+    if (!data || data.length === 0) {
+        container.innerHTML = "<p>No signals yet</p>";
+        return;
+    }
+
+    let html = "";
+    let buyCount = 0;
+    let strongBuyCount = 0;
+
+    data.forEach(item => {
+
+        if (item.signal_type === "BUY") buyCount++;
+        if (item.signal_type === "STRONG BUY") strongBuyCount++;
+
+        let color = "watch";
+        if (item.signal_type.includes("BUY")) color = "buy";
+        if (item.signal_type.includes("SELL")) color = "sell";
+
+        html += `
+        <div class="card">
+            <h3>${item.coin}</h3>
+            <p class="${color}">${item.signal_type}</p>
+            <p>Score: ${item.score}</p>
+            <p>Price: ${item.price}</p>
+            <p>TP1: ${item.tp1} | TP2: ${item.tp2}</p>
+            <p>SL: ${item.sl}</p>
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    document.getElementById("signalCount").innerText = data.length;
+    document.getElementById("buyCount").innerText = buyCount;
+    document.getElementById("strongBuyCount").innerText = strongBuyCount;
+}
+
+loadSignals();
+setInterval(loadSignals, 10000);
+</script>
 
 </body>
 </html>
