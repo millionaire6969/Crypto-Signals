@@ -1,1 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto AI Signals</title>
 
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <header>
+        <h1>🚀 Crypto AI Signals</h1>
+        <p>AI Powered Spot Trading Signals</p>
+    </header>
+
+    <div class="stats">
+        <div class="stat-box">
+            <h2 id="signalCount">0</h2>
+            <p>Total Signals</p>
+        </div>
+
+        <div class="stat-box">
+            <h2 id="buyCount">0</h2>
+            <p>Buy Signals</p>
+        </div>
+
+        <div class="stat-box">
+            <h2 id="strongBuyCount">0</h2>
+            <p>Strong Buy</p>
+        </div>
+    </div>
+
+    <section class="signals-container">
+
+        <h2>Latest Signals</h2>
+
+        <div id="signals">
+
+            <div class="signal-card demo">
+
+                <div class="badge strong-buy">
+                    STRONG BUY
+                </div>
+
+                <h3>BTC/USDT</h3>
+
+                <p>Score: 92/100</p>
+
+                <p>Entry: 105000 - 106000</p>
+
+                <p>TP1: 108000</p>
+                <p>TP2: 112000</p>
+                <p>TP3: 118000</p>
+
+                <p>SL: 102000</p>
+
+                <div class="reason-box">
+                    <p>✅ RSI Recovery</p>
+                    <p>✅ MACD Bullish Cross</p>
+                    <p>✅ EMA Alignment</p>
+                    <p>✅ Volume Spike</p>
+                    <p>✅ BTC Trend Bullish</p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <script src="app.js"></script>
+
+</body>
+</html>
