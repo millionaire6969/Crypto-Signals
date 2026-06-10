@@ -1,51 +1,45 @@
 import requests
 import pandas as pd
 import numpy as np
-from supabase import create_client
 import os
 
+from supabase import create_client
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD
 
 BASE_URL = "https://api.gateio.ws/api/v4"
 
+# ---------------- SUPABASE ----------------
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# ---------------- COINS ----------------
 def get_usdt_pairs():
-
     url = f"{BASE_URL}/spot/tickers"
-
     response = requests.get(url)
     data = response.json()
 
     pairs = []
 
     for coin in data:
-
         try:
-
             pair = coin["currency_pair"]
-
             if pair.endswith("_USDT"):
-
                 pairs.append({
                     "pair": pair,
                     "volume": float(coin["quote_volume"])
                 })
-
         except:
-            pass
+            continue
 
-    pairs = sorted(
-        pairs,
-        key=lambda x: x["volume"],
-        reverse=True
-    )
-
+    pairs = sorted(pairs, key=lambda x: x["volume"], reverse=True)
     return pairs[:100]
 
 
+# ---------------- CANDLES ----------------
 def get_candles(pair):
-
     url = f"{BASE_URL}/spot/candlesticks"
 
     params = {
@@ -54,123 +48,87 @@ def get_candles(pair):
         "limit": 200
     }
 
-    response = requests.get(
-        url,
-        params=params
-    )
+    response = requests.get(url, params=params)
+    data = response.json()
 
-    return response.json()
+    if not isinstance(data, list) or len(data) == 0:
+        return []
+
+    return data
 
 
+# ---------------- RSI ----------------
 def calculate_rsi(candles):
-
-    closes = []
-
-    for candle in candles:
-        closes.append(float(candle[2]))
-
+    closes = [float(c[2]) for c in candles]
     closes.reverse()
 
-    df = pd.DataFrame(
-        closes,
-        columns=["close"]
-    )
+    df = pd.DataFrame(closes, columns=["close"])
 
-    rsi = RSIIndicator(
-        close=df["close"],
-        window=14
-    ).rsi()
+    rsi = RSIIndicator(df["close"], window=14).rsi()
 
     return round(float(rsi.iloc[-1]), 2)
 
 
+# ---------------- EMA ----------------
 def calculate_emas(candles):
-
-    closes = []
-
-    for candle in candles:
-        closes.append(float(candle[2]))
-
+    closes = [float(c[2]) for c in candles]
     closes.reverse()
 
-    df = pd.DataFrame(
-        closes,
-        columns=["close"]
-    )
+    df = pd.DataFrame(closes, columns=["close"])
 
-    ema20 = EMAIndicator(
-        close=df["close"],
-        window=20
-    ).ema_indicator()
-
-    ema50 = EMAIndicator(
-        close=df["close"],
-        window=50
-    ).ema_indicator()
-
-    ema200 = EMAIndicator(
-        close=df["close"],
-        window=200
-    ).ema_indicator()
+    ema20 = EMAIndicator(df["close"], window=20).ema_indicator()
+    ema50 = EMAIndicator(df["close"], window=50).ema_indicator()
+    ema200 = EMAIndicator(df["close"], window=200).ema_indicator()
 
     return {
-        "ema20": round(float(ema20.iloc[-1]), 4),
-        "ema50": round(float(ema50.iloc[-1]), 4),
-        "ema200": round(float(ema200.iloc[-1]), 4)
+        "ema20": float(ema20.iloc[-1]),
+        "ema50": float(ema50.iloc[-1]),
+        "ema200": float(ema200.iloc[-1]),
     }
 
 
+# ---------------- MACD ----------------
 def calculate_macd(candles):
-
-    closes = []
-
-    for candle in candles:
-        closes.append(float(candle[2]))
-
+    closes = [float(c[2]) for c in candles]
     closes.reverse()
 
-    df = pd.DataFrame(
-        closes,
-        columns=["close"]
-    )
+    df = pd.DataFrame(closes, columns=["close"])
 
-    macd = MACD(close=df["close"])
+    macd = MACD(df["close"])
 
     macd_line = macd.macd().iloc[-1]
     signal_line = macd.macd_signal().iloc[-1]
 
     return {
-        "macd": round(float(macd_line), 4),
-        "signal": round(float(signal_line), 4),
+        "macd": float(macd_line),
+        "signal": float(signal_line),
         "bullish": macd_line > signal_line
     }
 
 
+# ---------------- VOLUME ----------------
 def calculate_volume_spike(candles):
-
-    volumes = []
-
-    for candle in candles:
-        volumes.append(float(candle[1]))
-
+    volumes = [float(c[1]) for c in candles]
     volumes.reverse()
 
-    current_volume = volumes[-1]
+    if len(volumes) < 10:
+        return {"spike": False, "ratio": 0}
 
-    average_volume = sum(volumes[:-1]) / len(volumes[:-1])
+    current = volumes[-1]
+    avg = sum(volumes[:-1]) / len(volumes[:-1])
 
-    ratio = current_volume / average_volume
+    ratio = current / avg if avg != 0 else 0
 
     return {
-        "current": round(current_volume, 2),
-        "average": round(average_volume, 2),
+        "current": current,
+        "average": avg,
         "ratio": round(ratio, 2),
         "spike": ratio >= 1.5
     }
 
 
+# ---------------- SCORE ----------------
 def get_trend_score(rsi, emas, macd, volume):
-
     score = 0
 
     if rsi > 55:
@@ -189,156 +147,84 @@ def get_trend_score(rsi, emas, macd, volume):
         score += 20
 
     return score
-    
-def get_signal(score):
 
+
+# ---------------- SIGNAL ----------------
+def get_signal(score):
     if score >= 80:
         return "STRONG BUY"
-
     elif score >= 60:
         return "BUY"
-
     elif score >= 40:
         return "WATCHLIST"
-
     elif score >= 20:
         return "SELL"
-
     else:
         return "STRONG SELL"
 
 
+# ---------------- LEVELS ----------------
 def get_trade_levels(candles):
-
-    closes = []
-
-    for candle in candles:
-        closes.append(float(candle[2]))
-
+    closes = [float(c[2]) for c in candles]
     closes.reverse()
 
-    current_price = closes[-1]
-
-    entry_low = round(current_price * 0.995, 4)
-    entry_high = round(current_price * 1.005, 4)
-
-    tp1 = round(current_price * 1.03, 4)
-    tp2 = round(current_price * 1.06, 4)
-    tp3 = round(current_price * 1.10, 4)
-
-    sl = round(current_price * 0.97, 4)
+    price = closes[-1]
 
     return {
-        "price": current_price,
-        "entry_low": entry_low,
-        "entry_high": entry_high,
-        "tp1": tp1,
-        "tp2": tp2,
-        "tp3": tp3,
-        "sl": sl
+        "price": price,
+        "entry_low": price * 0.995,
+        "entry_high": price * 1.005,
+        "tp1": price * 1.03,
+        "tp2": price * 1.06,
+        "tp3": price * 1.10,
+        "sl": price * 0.97
     }
 
-# MAIN
 
+# ---------------- MAIN ----------------
 pairs = get_usdt_pairs()
 
-print("TOP COINS FOUND:", len(pairs))
+print("TOP COINS:", len(pairs))
 
 for coin in pairs[:10]:
     print(coin["pair"], coin["volume"])
 
-candles = get_candles("BTC_USDT")
-
-print(candles[0])
-
-print("Candles Found:", len(candles))
-
-rsi = calculate_rsi(candles)
-
-emas = calculate_emas(candles)
-
-macd = calculate_macd(candles)
-
-volume = calculate_volume_spike(candles)
-
-score = get_trend_score(
-    rsi,
-    emas,
-    macd,
-    volume
-)
-
-signal = get_signal(score)
-
-levels = get_trade_levels(candles)
-
-print("RSI:", rsi)
-
-print("EMA20:", emas["ema20"])
-print("EMA50:", emas["ema50"])
-print("EMA200:", emas["ema200"])
-
-print("MACD:", macd["macd"])
-print("Signal:", macd["signal"])
-print("Bullish:", macd["bullish"])
-
-print("Volume Ratio:", volume["ratio"])
-print("Volume Spike:", volume["spike"])
-
-print("AI SCORE:", score)
-
-print("SIGNAL:", signal)
-
-print("PRICE:", levels["price"])
-
-print("ENTRY:",
-      levels["entry_low"],
-      "-",
-      levels["entry_high"])
-
-print("TP1:", levels["tp1"])
-print("TP2:", levels["tp2"])
-print("TP3:", levels["tp3"])
-
-print("SL:", levels["sl"])
 
 for coin in pairs[:5]:
 
     pair = coin["pair"]
 
     try:
-
         candles = get_candles(pair)
 
+        if len(candles) < 20:
+            continue
+
         rsi = calculate_rsi(candles)
-
         emas = calculate_emas(candles)
-
         macd = calculate_macd(candles)
-
         volume = calculate_volume_spike(candles)
 
-        score = get_trend_score(
-            rsi,
-            emas,
-            macd,
-            volume
-        )
-
+        score = get_trend_score(rsi, emas, macd, volume)
         signal = get_signal(score)
 
-        print(
-            pair,
-            "|",
-            signal,
-            "| Score:",
-            score
-        )
+        levels = get_trade_levels(candles)
+
+        supabase.table("signals").insert({
+            "coin": pair,
+            "signal_type": signal,
+            "score": score,
+            "price": levels["price"],
+            "entry_low": levels["entry_low"],
+            "entry_high": levels["entry_high"],
+            "tp1": levels["tp1"],
+            "tp2": levels["tp2"],
+            "tp3": levels["tp3"],
+            "sl": levels["sl"],
+            "reasons": f"RSI:{rsi} EMA20>{emas['ema20']} EMA50>{emas['ema50']} MACD:{macd['bullish']} VOL:{volume['spike']}"
+        }).execute()
+
+        print(pair, "|", signal, "| Score:", score)
 
     except Exception as e:
-
-        print(
-            pair,
-            "| ERROR:",
-            str(e)
-        )
+        print(pair, "| ERROR:", str(e))
