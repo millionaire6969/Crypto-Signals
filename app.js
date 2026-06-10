@@ -37,28 +37,36 @@ function getBadgeClass(type) {
     if(type === "STRONG BUY") return "strong-buy";
     if(type === "BUY") return "buy";
     if(type === "SELL") return "sell";
-    return "strong-sell";
+    if(type === "STRONG SELL") return "strong-sell";
+    return "watch";
 }
 
 function renderSignals() {
 
     const container = document.getElementById("signals");
 
+    if(!container) {
+        console.error("signals container not found in HTML");
+        return;
+    }
+
     container.innerHTML = "";
 
     let buyCount = 0;
     let strongBuyCount = 0;
+
+    let html = "";
 
     demoSignals.forEach(signal => {
 
         if(signal.type === "BUY") buyCount++;
         if(signal.type === "STRONG BUY") strongBuyCount++;
 
-        const reasonsHTML = signal.reasons
+        const reasonsHTML = (signal.reasons || [])
         .map(r => `<p>✅ ${r}</p>`)
         .join("");
 
-        container.innerHTML += `
+        html += `
         <div class="signal-card">
 
             <div class="badge ${getBadgeClass(signal.type)}">
@@ -68,7 +76,6 @@ function renderSignals() {
             <h3>${signal.coin}</h3>
 
             <p><b>Score:</b> ${signal.score}/100</p>
-
             <p><b>Entry:</b> ${signal.entry}</p>
 
             <p><b>TP1:</b> ${signal.tp1}</p>
@@ -85,14 +92,16 @@ function renderSignals() {
         `;
     });
 
-    document.getElementById("signalCount").innerText =
-        demoSignals.length;
+    container.innerHTML = html;
 
-    document.getElementById("buyCount").innerText =
-        buyCount;
+    // SAFE updates (no crash if missing)
+    const sc = document.getElementById("signalCount");
+    const bc = document.getElementById("buyCount");
+    const sbc = document.getElementById("strongBuyCount");
 
-    document.getElementById("strongBuyCount").innerText =
-        strongBuyCount;
+    if(sc) sc.innerText = demoSignals.length;
+    if(bc) bc.innerText = buyCount;
+    if(sbc) sbc.innerText = strongBuyCount;
 }
 
 renderSignals();
