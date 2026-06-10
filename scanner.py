@@ -187,7 +187,54 @@ def get_trend_score(rsi, emas, macd, volume):
         score += 20
 
     return score
+    
+def get_signal(score):
 
+    if score >= 80:
+        return "STRONG BUY"
+
+    elif score >= 60:
+        return "BUY"
+
+    elif score >= 40:
+        return "WATCHLIST"
+
+    elif score >= 20:
+        return "SELL"
+
+    else:
+        return "STRONG SELL"
+
+
+def get_trade_levels(candles):
+
+    closes = []
+
+    for candle in candles:
+        closes.append(float(candle[2]))
+
+    closes.reverse()
+
+    current_price = closes[-1]
+
+    entry_low = round(current_price * 0.995, 4)
+    entry_high = round(current_price * 1.005, 4)
+
+    tp1 = round(current_price * 1.03, 4)
+    tp2 = round(current_price * 1.06, 4)
+    tp3 = round(current_price * 1.10, 4)
+
+    sl = round(current_price * 0.97, 4)
+
+    return {
+        "price": current_price,
+        "entry_low": entry_low,
+        "entry_high": entry_high,
+        "tp1": tp1,
+        "tp2": tp2,
+        "tp3": tp3,
+        "sl": sl
+    }
 
 # MAIN
 
@@ -199,6 +246,8 @@ for coin in pairs[:10]:
     print(coin["pair"], coin["volume"])
 
 candles = get_candles("BTC_USDT")
+
+print(candles[0])
 
 print("Candles Found:", len(candles))
 
@@ -217,6 +266,10 @@ score = get_trend_score(
     volume
 )
 
+signal = get_signal(score)
+
+levels = get_trade_levels(candles)
+
 print("RSI:", rsi)
 
 print("EMA20:", emas["ema20"])
@@ -231,3 +284,18 @@ print("Volume Ratio:", volume["ratio"])
 print("Volume Spike:", volume["spike"])
 
 print("AI SCORE:", score)
+
+print("SIGNAL:", signal)
+
+print("PRICE:", levels["price"])
+
+print("ENTRY:",
+      levels["entry_low"],
+      "-",
+      levels["entry_high"])
+
+print("TP1:", levels["tp1"])
+print("TP2:", levels["tp2"])
+print("TP3:", levels["tp3"])
+
+print("SL:", levels["sl"])
